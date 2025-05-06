@@ -1,11 +1,10 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
 
-// ------------------Types---------------------
-
+// Types
 type Habit = {
   id: number;
   name: string;
@@ -121,14 +120,14 @@ export default function WellnessTracker(): React.ReactElement {
   const [reminderTime, setReminderTime] = useState<string>('12:00');
   const [reminderMessage, setReminderMessage] = useState<string>('');
   const [notificationPermission, setNotificationPermission] = useState<NotificationPermission | null>(null);
-  // Removed unused states: editHabit, setEditHabit, showEditModal, setShowEditModal, unreadReminders, setUnreadReminders, setAppView, mobileMenuOpen, setMobileMenuOpen
-  // Removed clearReminder function as unused
+  const [unreadReminders, setUnreadReminders] = useState<number>(0);
 
   const [darkMode, setDarkMode] = useState<boolean>(false);
   const [currentView, setCurrentView] = useState<'landing' | 'app'>('landing');
   const [appView, setAppView] = useState<'dashboard' | 'habits'>('dashboard');
   const [showAddHabit, setShowAddHabit] = useState<boolean>(false);
   const [habits, setHabits] = useState<Habit[]>(MOCK_HABITS);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState<boolean>(false);
 
   // Add Habit Form State
   const [newHabitName, setNewHabitName] = useState<string>('');
@@ -138,22 +137,57 @@ export default function WellnessTracker(): React.ReactElement {
   const [newHabitIcon, setNewHabitIcon] = useState<string>('⭐');
   const [newHabitColor, setNewHabitColor] = useState<string>('#6366f1');
 
-  // Trigger browser notification
-  const triggerNotification = (reminder: Reminder) => {
-    if (notificationPermission === 'granted') {
-      const notification = new Notification(`Reminder: ${reminder.habitName}`, {
-        body: reminder.message,
-        icon: '/favicon.ico',
-      });
-      notification.onclick = () => {
-        window.focus();
-        setShowReminders(true);
-      };
+  // Load reminders and notification permission, set interval to check reminders
+  useEffect(() => {
+    // Load saved reminders
+    const savedReminders = localStorage.getItem('reminders');
+    if (savedReminders) {
+      setReminders(JSON.parse(savedReminders));
     }
+
+    // Load theme
+    const savedTheme = localStorage.getItem('theme');
+    const savedDarkMode = savedTheme === 'dark';
+    setDarkMode(savedDarkMode);
+    document.documentElement.classList.toggle('dark', savedDarkMode);
+
+    // Check notification permission
+    if ('Notification' in window) {
+      setNotificationPermission(Notification.permission);
+    }
+
+    const reminderInterval = setInterval(() => {
+      checkReminders();
+    }, 30000);
+
+    return () => clearInterval(reminderInterval);
+  }, []);
+
+  // Save reminders to localStorage on change
+  useEffect(() => {
+    localStorage.setItem('reminders', JSON.stringify(reminders));
+  }, [reminders]);
+
+  // Toggle dark mode
+  const toggleDarkMode = () => {
+    const newMode = !darkMode;
+    setDarkMode(newMode);
+    localStorage.setItem('theme', newMode ? 'dark' : 'light');
+    document.documentElement.classList.toggle('dark', newMode);
+  };
+
+  // Request notification permission
+  const requestNotificationPermission = async () => {
+    if ('Notification' in window) {
+      const permission = await Notification.requestPermission();
+      setNotificationPermission(permission);
+      return permission;
+    }
+    return null;
   };
 
   // Check reminders for matching current time and trigger notification
-  const checkReminders = useCallback(() => {
+  const checkReminders = () => {
     const now = new Date();
     const currentHour = now.getHours().toString().padStart(2, '0');
     const currentMinute = now.getMinutes().toString().padStart(2, '0');
@@ -171,37 +205,23 @@ export default function WellnessTracker(): React.ReactElement {
       }
     });
 
-    // Removed setUnreadReminders call as unreadReminders state is removed
-
-  }, [reminders, triggerNotification]);
-
-  // Load reminders and notification permission, set interval to check reminders
-  useEffect(() => {
-    const savedReminders = localStorage.getItem('reminders');
-    if (savedReminders) {
-      setReminders(JSON.parse(savedReminders));
+    if (newUnreadCount > 0) {
+      setUnreadReminders((prev) => prev + newUnreadCount);
     }
+  };
 
-    const reminderInterval = setInterval(() => {
-      checkReminders();
-    }, 30000);
-
-    return () => clearInterval(reminderInterval);
-  }, [checkReminders]);
-
-  // Save reminders to localStorage on change
-  useEffect(() => {
-    localStorage.setItem('reminders', JSON.stringify(reminders));
-  }, [reminders]);
-
-  // Request notification permission
-  const requestNotificationPermission = async () => {
-    if ('Notification' in window) {
-      const permission = await Notification.requestPermission();
-      setNotificationPermission(permission);
-      return permission;
+  // Trigger browser notification
+  const triggerNotification = (reminder: Reminder) => {
+    if (notificationPermission === 'granted') {
+      const notification = new Notification(`Reminder: ${reminder.habitName}`, {
+        body: reminder.message,
+        icon: '/favicon.ico',
+      });
+      notification.onclick = () => {
+        window.focus();
+        setShowReminders(true);
+      };
     }
-    return null;
   };
 
   // Add new reminder
@@ -226,9 +246,15 @@ export default function WellnessTracker(): React.ReactElement {
     }
   };
 
-  // Clear reminder function removed as unused
+  // Clear reminder
+  const clearReminder = (reminderId: number) => {
+    setReminders((prev) => prev.filter((r) => r.id !== reminderId));
+  };
 
-  // Mark reminders as read function removed as unused
+  // Mark reminders as read
+  const markRemindersAsRead = () => {
+    setUnreadReminders(0);
+  };
 
   // Habit toggles and update functions
   const toggleDay = (habitId: number, dayIndex: number) => {
@@ -237,6 +263,28 @@ export default function WellnessTracker(): React.ReactElement {
         if (habit.id === habitId) {
           const newData = [...habit.data];
           newData[dayIndex] = newData[dayIndex] >= habit.target ? 0 : habit.target;
+
+          let currentStreak = 0;
+          let longestStreak = habit.longestStreak;
+          for (let i = newData.length - 1; i >= 0; i--) {
+            if (newData[i] >= habit.target) currentStreak++;
+            else break;
+          }
+          if (currentStreak > longestStreak) longestStreak = currentStreak;
+
+          return { ...habit, data: newData, currentStreak, longestStreak };
+        }
+        return habit;
+      })
+    );
+  };
+
+  const updateHabitValue = (habitId: number, dayIndex: number, value: number) => {
+    setHabits((prev) =>
+      prev.map((habit) => {
+        if (habit.id === habitId) {
+          const newData = [...habit.data];
+          newData[dayIndex] = value;
 
           let currentStreak = 0;
           let longestStreak = habit.longestStreak;
@@ -292,16 +340,14 @@ export default function WellnessTracker(): React.ReactElement {
     return '📊';
   };
 
+  const formatCategory = (category: string): string => {
+    return category.charAt(0).toUpperCase() + category.slice(1);
+  };
+
   // Calculated sums for screen time and mood averages
   const totalScreenTime = SCREEN_TIME_DATA.reduce((acc, item) => acc + item.value, 0);
   const averageMood = (MOOD_DATA.reduce((acc, item) => acc + item.value, 0) / 7).toFixed(1);
 
-
-
-
-
-  
-/*---------------------------------------------------------------*/
   return (
     <div className="min-h-screen bg-gray-50 text-gray-800 transition-colors duration-300 dark:bg-gray-900 dark:text-gray-200">
       {/* Landing Page */}
@@ -395,58 +441,261 @@ export default function WellnessTracker(): React.ReactElement {
           {/* Navbar */}
           <nav className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg shadow-lg p-4 mb-8 rounded-xl sticky top-4 z-10">
             <div className="flex justify-between items-center">
-              <h1 className="text-xl font-bold bg-gradient-to-r from-violet-600 to-indigo-600 dark:from-violet-400 dark:to-indigo-400 bg-clip-text text-transparent">
-                Wellness Tracker
-              </h1>
+              <div className="flex items-center gap-2">
+                <h1 className="text-xl font-bold bg-gradient-to-r from-violet-600 to-indigo-600 dark:from-violet-400 dark:to-indigo-400 bg-clip-text text-transparent">
+                  Wellness Tracker
+                </h1>
+              </div>
+
               <div className="flex items-center gap-4">
-                {/* Theme Toggle Button */}
-                <button
-                  onClick={() => {
-                    setDarkMode(!darkMode);
-                    document.documentElement.classList.toggle('dark', !darkMode);
-                    localStorage.setItem('theme', !darkMode ? 'dark' : 'light');
-                  }}
-                  className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                  aria-label="Toggle theme"
-                >
-                  {darkMode ? (
+                {/* Notifications Button */}
+                <div className="relative">
+                  <button
+                    onClick={() => {
+                      setShowReminders(!showReminders);
+                      markRemindersAsRead();
+                    }}
+                    className="relative p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                    aria-label="Notifications"
+                  >
                     <svg
-                      xmlns="http://www.w3.org/2000/svg"
                       width="20"
                       height="20"
-                      fill="currentColor"
-                      viewBox="0 0 16 16"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      xmlns="http://www.w3.org/2000/svg"
                     >
-                      <path d="M6 0a6 6 0 0 0 0 12A6 6 0 0 0 6 0zm0 1a5 5 0 0 1 0 10A5 5 0 0 1 6 1z" />
+                      <path
+                        d="M18 8C18 6.4087 17.3679 4.88258 16.2426 3.75736C15.1174 2.63214 13.5913 2 12 2C10.4087 2 8.88258 2.63214 7.75736 3.75736C6.63214 4.88258 6 6.4087 6 8C6 15 3 17 3 17H21C21 17 18 15 18 8Z"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                      <path
+                        d="M13.73 21C13.5542 21.3031 13.3019 21.5547 12.9982 21.7295C12.6946 21.9044 12.3504 21.9965 12 21.9965C11.6496 21.9965 11.3054 21.9044 11.0018 21.7295C10.6982 21.5547 10.4458 21.3031 10.27 21"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+
+                    {unreadReminders > 0 && (
+                      <span className="absolute top-0 right-0 w-5 h-5 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center">
+                        {unreadReminders}
+                      </span>
+                    )}
+                  </button>
+
+                  {/* Reminders Panel */}
+                  <AnimatePresence>
+                    {showReminders && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: 10 }}
+                        className="absolute right-0 mt-2 w-80 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-20"
+                      >
+                        <div className="flex justify-between items-center p-4 border-b border-gray-200 dark:border-gray-700">
+                          <h3 className="font-medium">Reminders</h3>
+                          <button
+                            onClick={() => setShowReminders(false)}
+                            className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                          >
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              width="16"
+                              height="16"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            >
+                              <line x1="18" y1="6" x2="6" y2="18"></line>
+                              <line x1="6" y1="6" x2="18" y2="18"></line>
+                            </svg>
+                          </button>
+                        </div>
+
+                        <div className="max-h-80 overflow-y-auto">
+                          {reminders.length === 0 ? (
+                            <div className="p-4 text-center text-gray-500 dark:text-gray-400">
+                              No reminders set
+                            </div>
+                          ) : (
+                            reminders.map((reminder) => (
+                              <div
+                                key={reminder.id}
+                                className="p-3 border-b border-gray-100 dark:border-gray-700"
+                              >
+                                <div className="flex items-center gap-3">
+                                  <span className="text-xl">{reminder.habitIcon}</span>
+                                  <div className="flex-1">
+                                    <div className="font-medium">{reminder.habitName}</div>
+                                    <div className="text-sm text-gray-500 dark:text-gray-400">
+                                      {reminder.time} - {reminder.message}
+                                    </div>
+                                  </div>
+                                  <button
+                                    onClick={() => clearReminder(reminder.id)}
+                                    className="text-gray-400 hover:text-red-500"
+                                    aria-label="Clear reminder"
+                                  >
+                                    <svg
+                                      xmlns="http://www.w3.org/2000/svg"
+                                      width="16"
+                                      height="16"
+                                      viewBox="0 0 24 24"
+                                      fill="none"
+                                      stroke="currentColor"
+                                      strokeWidth="2"
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                    >
+                                      <path d="M18 6L6 18"></path>
+                                      <path d="M6 6l12 12"></path>
+                                    </svg>
+                                  </button>
+                                </div>
+                                <div
+                                  className={`text-xs mt-1 ${
+                                    reminder.isActive ? 'text-green-500' : 'text-gray-400'
+                                  }`}
+                                >
+                                  {reminder.isActive ? 'Active' : 'Completed'}
+                                </div>
+                              </div>
+                            ))
+                          )}
+                        </div>
+
+                        {notificationPermission !== 'granted' && (
+                          <div className="p-3 bg-yellow-50 dark:bg-yellow-900/30 text-sm">
+                            <button
+                              onClick={requestNotificationPermission}
+                              className="text-blue-600 dark:text-blue-400 font-medium hover:underline"
+                            >
+                              Enable notifications
+                            </button>{' '}
+                            to receive reminders.
+                          </div>
+                        )}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+
+                {/* Desktop Navigation */}
+                <div className="hidden md:flex gap-2">
+                  <button
+                    onClick={() => setAppView('dashboard')}
+                    className={`px-4 py-2 rounded-lg transition-colors ${
+                      appView === 'dashboard'
+                        ? 'bg-gradient-to-r from-violet-600 to-indigo-600 text-white'
+                        : 'bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600'
+                    }`}
+                  >
+                    Dashboard
+                  </button>
+                  <button
+                    onClick={() => setAppView('habits')}
+                    className={`px-4 py-2 rounded-lg transition-colors ${
+                      appView === 'habits'
+                        ? 'bg-gradient-to-r from-violet-600 to-indigo-600 text-white'
+                        : 'bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600'
+                    }`}
+                  >
+                    Habits
+                  </button>
+                </div>
+
+                {/* Mobile Menu Button */}
+                <button
+                  className="md:hidden p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
+                  onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                  aria-label="Toggle menu"
+                >
+                  {mobileMenuOpen ? (
+                    <svg
+                      width="24"
+                      height="24"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path
+                        d="M6 18L18 6M6 6L18 18"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
                     </svg>
                   ) : (
                     <svg
+                      width="24"
+                      height="24"
+                      viewBox="0 0 24 24"
+                      fill="none"
                       xmlns="http://www.w3.org/2000/svg"
-                      width="20"
-                      height="20"
-                      fill="currentColor"
-                      viewBox="0 0 16 16"
                     >
-                      <path d="M8 0a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-1 0v-1A.5.5 0 0 1 8 0zm0 14a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-1 0v-1a.5.5 0 0 1 .5-.5zm7-6a.5.5 0 0 1 .5.5h1a.5.5 0 0 1 0 1h-1a.5.5 0 0 1-.5-.5zm-14 0a.5.5 0 0 1 .5.5H1a.5.5 0 0 1 0 1H.5a.5.5 0 0 1-.5-.5zm11.657-4.657a.5.5 0 0 1 .707 0l.707.707a.5.5 0 0 1-.707.707l-.707-.707a.5.5 0 0 1 0-.707zm-9.9 9.9a.5.5 0 0 1 .707 0l.707.707a.5.5 0 0 1-.707.707l-.707-.707a.5.5 0 0 1 0-.707zm9.9 0a.5.5 0 0 1 0 .707l-.707.707a.5.5 0 0 1-.707-.707l.707-.707a.5.5 0 0 1 .707 0zm-9.9-9.9a.5.5 0 0 1 0 .707L1.757 2.464a.5.5 0 1 1-.707-.707l.707-.707a.5.5 0 0 1 .707 0z" />
+                      <path
+                        d="M4 6H20M4 12H20M4 18H20"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
                     </svg>
                   )}
                 </button>
+              </div>
+            </div>
 
-                {/* Notifications Button */}
-                <button
-                onClick={() => {
-                  setShowReminders(!showReminders);
-                }}
-                className="relative p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                aria-label="Notifications"
-              >
-                Notifications
-              </button>
-      </div>
-    </div>
-  </nav>
-
-          
+            {/* Mobile Menu */}
+            <AnimatePresence>
+              {mobileMenuOpen && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: 'auto', opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  className="md:hidden mt-4 overflow-hidden"
+                >
+                  <div className="flex flex-col gap-2">
+                    <button
+                      onClick={() => {
+                        setAppView('dashboard');
+                        setMobileMenuOpen(false);
+                      }}
+                      className={`px-4 py-3 rounded-lg transition-all ${
+                        appView === 'dashboard'
+                          ? 'bg-gradient-to-r from-violet-600 to-indigo-600 text-white'
+                          : 'bg-gray-100 dark:bg-gray-700'
+                      }`}
+                    >
+                      Dashboard
+                    </button>
+                    <button
+                      onClick={() => {
+                        setAppView('habits');
+                        setMobileMenuOpen(false);
+                      }}
+                      className={`px-4 py-3 rounded-lg transition-all ${
+                        appView === 'habits'
+                          ? 'bg-gradient-to-r from-violet-600 to-indigo-600 text-white'
+                          : 'bg-gray-100 dark:bg-gray-700'
+                      }`}
+                    >
+                      Habits
+                    </button>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </nav>
 
           {/* Dashboard View */}
           {appView === 'dashboard' && (
@@ -461,9 +710,9 @@ export default function WellnessTracker(): React.ReactElement {
                 <div className="flex flex-col md:flex-row justify-between">
                   <div>
                     <h2 className="text-2xl font-bold mb-2">Welcome back!</h2>
-              <p className="opacity-90">
-                You&apos;re on track with {habits.filter((h) => h.currentStreak > 0).length} of your {habits.length} habits this week.
-              </p>
+                    <p className="opacity-90">
+                      You're on track with {habits.filter((h) => h.currentStreak > 0).length} of your {habits.length} habits this week.
+                    </p>
                   </div>
                   <div className="mt-4 md:mt-0">
                     <span className="text-5xl">✨</span>
