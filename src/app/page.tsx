@@ -137,6 +137,30 @@ export default function WellnessTracker(): React.ReactElement {
   const [newHabitIcon, setNewHabitIcon] = useState<string>('⭐');
   const [newHabitColor, setNewHabitColor] = useState<string>('#6366f1');
 
+  // Check reminders function
+  const checkReminders = () => {
+    const now = new Date();
+    const currentHour = now.getHours().toString().padStart(2, '0');
+    const currentMinute = now.getMinutes().toString().padStart(2, '0');
+    const currentTime = `${currentHour}:${currentMinute}`;
+
+    let newUnreadCount = 0;
+
+    reminders.forEach((reminder) => {
+      if (reminder.isActive && reminder.time === currentTime) {
+        triggerNotification(reminder);
+        setReminders((prev) =>
+          prev.map((r) => (r.id === reminder.id ? { ...r, isActive: false } : r))
+        );
+        newUnreadCount++;
+      }
+    });
+
+    if (newUnreadCount > 0) {
+      setUnreadReminders((prev) => prev + newUnreadCount);
+    }
+  };
+
   // Load reminders and notification permission, set interval to check reminders
   useEffect(() => {
     // Load saved reminders
@@ -161,7 +185,7 @@ export default function WellnessTracker(): React.ReactElement {
     }, 30000);
 
     return () => clearInterval(reminderInterval);
-  }, []);
+  }, [checkReminders]); // Added checkReminders to the dependency array
 
   // Save reminders to localStorage on change
   useEffect(() => {
@@ -184,30 +208,6 @@ export default function WellnessTracker(): React.ReactElement {
       return permission;
     }
     return null;
-  };
-
-  // Check reminders for matching current time and trigger notification
-  const checkReminders = () => {
-    const now = new Date();
-    const currentHour = now.getHours().toString().padStart(2, '0');
-    const currentMinute = now.getMinutes().toString().padStart(2, '0');
-    const currentTime = `${currentHour}:${currentMinute}`;
-
-    let newUnreadCount = 0;
-
-    reminders.forEach((reminder) => {
-      if (reminder.isActive && reminder.time === currentTime) {
-        triggerNotification(reminder);
-        setReminders((prev) =>
-          prev.map((r) => (r.id === reminder.id ? { ...r, isActive: false } : r))
-        );
-        newUnreadCount++;
-      }
-    });
-
-    if (newUnreadCount > 0) {
-      setUnreadReminders((prev) => prev + newUnreadCount);
-    }
   };
 
   // Trigger browser notification
@@ -711,7 +711,7 @@ export default function WellnessTracker(): React.ReactElement {
                   <div>
                     <h2 className="text-2xl font-bold mb-2">Welcome back!</h2>
                     <p className="opacity-90">
-                      You're on track with {habits.filter((h) => h.currentStreak > 0).length} of your {habits.length} habits this week.
+                      You&apos;re on track with {habits.filter((h) => h.currentStreak > 0).length} of your {habits.length} habits this week.
                     </p>
                   </div>
                   <div className="mt-4 md:mt-0">
@@ -720,8 +720,9 @@ export default function WellnessTracker(): React.ReactElement {
                 </div>
               </div>
 
-              {/* Stats Overview Cards */}
-              <div>
+
+                           {/* Stats Overview Cards */}
+                           <div>
                 <h3 className="text-xl font-semibold mb-4 px-1">Your Health Overview</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {habits.slice(0, 3).map((habit) => (
@@ -771,11 +772,9 @@ export default function WellnessTracker(): React.ReactElement {
                     </div>
                   ))}
 
-              
-
                   {/* Screen Time Card */}
                   <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-lg transition-transform hover:scale-[1.02]">
-                  <div className="flex items-center gap-3 mb-4">
+                    <div className="flex items-center gap-3 mb-4">
                       <span className="text-2xl">📱</span>
                       <h4 className="text-lg font-semibold">Screen Time</h4>
                     </div>
