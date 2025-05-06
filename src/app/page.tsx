@@ -121,16 +121,14 @@ export default function WellnessTracker(): React.ReactElement {
   const [reminderTime, setReminderTime] = useState<string>('12:00');
   const [reminderMessage, setReminderMessage] = useState<string>('');
   const [notificationPermission, setNotificationPermission] = useState<NotificationPermission | null>(null);
-  const [editHabit, setEditHabit] = useState<Habit | null>(null);
-  const [showEditModal, setShowEditModal] = useState(false);
-  const [unreadReminders, setUnreadReminders] = useState<number>(0);
+  // Removed unused states: editHabit, setEditHabit, showEditModal, setShowEditModal, unreadReminders, setUnreadReminders, setAppView, mobileMenuOpen, setMobileMenuOpen
+  // Removed clearReminder function as unused
 
   const [darkMode, setDarkMode] = useState<boolean>(false);
   const [currentView, setCurrentView] = useState<'landing' | 'app'>('landing');
   const [appView, setAppView] = useState<'dashboard' | 'habits'>('dashboard');
   const [showAddHabit, setShowAddHabit] = useState<boolean>(false);
   const [habits, setHabits] = useState<Habit[]>(MOCK_HABITS);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState<boolean>(false);
 
   // Add Habit Form State
   const [newHabitName, setNewHabitName] = useState<string>('');
@@ -139,6 +137,20 @@ export default function WellnessTracker(): React.ReactElement {
   const [newHabitUnit, setNewHabitUnit] = useState<string>('times');
   const [newHabitIcon, setNewHabitIcon] = useState<string>('⭐');
   const [newHabitColor, setNewHabitColor] = useState<string>('#6366f1');
+
+  // Trigger browser notification
+  const triggerNotification = (reminder: Reminder) => {
+    if (notificationPermission === 'granted') {
+      const notification = new Notification(`Reminder: ${reminder.habitName}`, {
+        body: reminder.message,
+        icon: '/favicon.ico',
+      });
+      notification.onclick = () => {
+        window.focus();
+        setShowReminders(true);
+      };
+    }
+  };
 
   // Check reminders for matching current time and trigger notification
   const checkReminders = useCallback(() => {
@@ -159,10 +171,9 @@ export default function WellnessTracker(): React.ReactElement {
       }
     });
 
-    if (newUnreadCount > 0) {
-      setUnreadReminders((prev) => prev + newUnreadCount);
-    }
-  }, [reminders]);
+    // Removed setUnreadReminders call as unreadReminders state is removed
+
+  }, [reminders, triggerNotification]);
 
   // Load reminders and notification permission, set interval to check reminders
   useEffect(() => {
@@ -193,20 +204,6 @@ export default function WellnessTracker(): React.ReactElement {
     return null;
   };
 
-  // Trigger browser notification
-  const triggerNotification = (reminder: Reminder) => {
-    if (notificationPermission === 'granted') {
-      const notification = new Notification(`Reminder: ${reminder.habitName}`, {
-        body: reminder.message,
-        icon: '/favicon.ico',
-      });
-      notification.onclick = () => {
-        window.focus();
-        setShowReminders(true);
-      };
-    }
-  };
-
   // Add new reminder
   const addReminder = () => {
     if (!currentHabitForReminder) return;
@@ -229,15 +226,9 @@ export default function WellnessTracker(): React.ReactElement {
     }
   };
 
-  // Clear reminder
-  const clearReminder = (reminderId: number) => {
-    setReminders((prev) => prev.filter((r) => r.id !== reminderId));
-  };
+  // Clear reminder function removed as unused
 
-  // Mark reminders as read
-  const markRemindersAsRead = () => {
-    setUnreadReminders(0);
-  };
+  // Mark reminders as read function removed as unused
 
   // Habit toggles and update functions
   const toggleDay = (habitId: number, dayIndex: number) => {
@@ -443,18 +434,17 @@ export default function WellnessTracker(): React.ReactElement {
 
                 {/* Notifications Button */}
                 <button
-                  onClick={() => {
-                    setShowReminders(!showReminders);
-                    markRemindersAsRead();
-                  }}
-                  className="relative p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                  aria-label="Notifications"
-                >
-                  Notifications
-                </button>
-              </div>
-            </div>
-          </nav>
+                onClick={() => {
+                  setShowReminders(!showReminders);
+                }}
+                className="relative p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                aria-label="Notifications"
+              >
+                Notifications
+              </button>
+      </div>
+    </div>
+  </nav>
 
           
 
@@ -471,9 +461,9 @@ export default function WellnessTracker(): React.ReactElement {
                 <div className="flex flex-col md:flex-row justify-between">
                   <div>
                     <h2 className="text-2xl font-bold mb-2">Welcome back!</h2>
-                    <p className="opacity-90">
-                      You're on track with {habits.filter((h) => h.currentStreak > 0).length} of your {habits.length} habits this week.
-                    </p>
+              <p className="opacity-90">
+                You&apos;re on track with {habits.filter((h) => h.currentStreak > 0).length} of your {habits.length} habits this week.
+              </p>
                   </div>
                   <div className="mt-4 md:mt-0">
                     <span className="text-5xl">✨</span>
