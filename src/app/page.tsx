@@ -771,9 +771,11 @@ export default function WellnessTracker(): React.ReactElement {
                     </div>
                   ))}
 
+              
+
                   {/* Screen Time Card */}
                   <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-lg transition-transform hover:scale-[1.02]">
-                    <div className="flex items-center gap-3 mb-4">
+                  <div className="flex items-center gap-3 mb-4">
                       <span className="text-2xl">📱</span>
                       <h4 className="text-lg font-semibold">Screen Time</h4>
                     </div>
