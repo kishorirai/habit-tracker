@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
 
@@ -138,7 +138,7 @@ export default function WellnessTracker(): React.ReactElement {
   const [newHabitColor, setNewHabitColor] = useState<string>('#6366f1');
 
   // Check reminders function
-  const checkReminders = () => {
+  const checkReminders = useCallback(() => {
     const now = new Date();
     const currentHour = now.getHours().toString().padStart(2, '0');
     const currentMinute = now.getMinutes().toString().padStart(2, '0');
@@ -159,7 +159,7 @@ export default function WellnessTracker(): React.ReactElement {
     if (newUnreadCount > 0) {
       setUnreadReminders((prev) => prev + newUnreadCount);
     }
-  };
+  }, [reminders]);
 
   // Load reminders and notification permission, set interval to check reminders
   useEffect(() => {
@@ -185,20 +185,12 @@ export default function WellnessTracker(): React.ReactElement {
     }, 30000);
 
     return () => clearInterval(reminderInterval);
-  }, [checkReminders]); // Added checkReminders to the dependency array
+  }, [checkReminders]);
 
   // Save reminders to localStorage on change
   useEffect(() => {
     localStorage.setItem('reminders', JSON.stringify(reminders));
   }, [reminders]);
-
-  // Toggle dark mode
-  const toggleDarkMode = () => {
-    const newMode = !darkMode;
-    setDarkMode(newMode);
-    localStorage.setItem('theme', newMode ? 'dark' : 'light');
-    document.documentElement.classList.toggle('dark', newMode);
-  };
 
   // Request notification permission
   const requestNotificationPermission = async () => {
@@ -279,28 +271,6 @@ export default function WellnessTracker(): React.ReactElement {
     );
   };
 
-  const updateHabitValue = (habitId: number, dayIndex: number, value: number) => {
-    setHabits((prev) =>
-      prev.map((habit) => {
-        if (habit.id === habitId) {
-          const newData = [...habit.data];
-          newData[dayIndex] = value;
-
-          let currentStreak = 0;
-          let longestStreak = habit.longestStreak;
-          for (let i = newData.length - 1; i >= 0; i--) {
-            if (newData[i] >= habit.target) currentStreak++;
-            else break;
-          }
-          if (currentStreak > longestStreak) longestStreak = currentStreak;
-
-          return { ...habit, data: newData, currentStreak, longestStreak };
-        }
-        return habit;
-      })
-    );
-  };
-
   // Create new habit
   const handleCreateHabit = () => {
     if (!newHabitName.trim()) {
@@ -338,10 +308,6 @@ export default function WellnessTracker(): React.ReactElement {
     if (streak >= 7) return '🔥';
     if (streak >= 3) return '✨';
     return '📊';
-  };
-
-  const formatCategory = (category: string): string => {
-    return category.charAt(0).toUpperCase() + category.slice(1);
   };
 
   // Calculated sums for screen time and mood averages
@@ -720,9 +686,8 @@ export default function WellnessTracker(): React.ReactElement {
                 </div>
               </div>
 
-
-                           {/* Stats Overview Cards */}
-                           <div>
+              {/* Stats Overview Cards */}
+              <div>
                 <h3 className="text-xl font-semibold mb-4 px-1">Your Health Overview</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {habits.slice(0, 3).map((habit) => (
@@ -771,6 +736,9 @@ export default function WellnessTracker(): React.ReactElement {
                       </ResponsiveContainer>
                     </div>
                   ))}
+
+
+                  
 
                   {/* Screen Time Card */}
                   <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-lg transition-transform hover:scale-[1.02]">
