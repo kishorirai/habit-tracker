@@ -122,7 +122,6 @@ export default function WellnessTracker(): React.ReactElement {
   const [notificationPermission, setNotificationPermission] = useState<NotificationPermission | null>(null);
   const [unreadReminders, setUnreadReminders] = useState<number>(0);
 
-  const [darkMode, setDarkMode] = useState<boolean>(false);
   const [currentView, setCurrentView] = useState<'landing' | 'app'>('landing');
   const [appView, setAppView] = useState<'dashboard' | 'habits'>('dashboard');
   const [showAddHabit, setShowAddHabit] = useState<boolean>(false);
@@ -168,12 +167,6 @@ export default function WellnessTracker(): React.ReactElement {
     if (savedReminders) {
       setReminders(JSON.parse(savedReminders));
     }
-
-    // Load theme
-    const savedTheme = localStorage.getItem('theme');
-    const savedDarkMode = savedTheme === 'dark';
-    setDarkMode(savedDarkMode);
-    document.documentElement.classList.toggle('dark', savedDarkMode);
 
     // Check notification permission
     if ('Notification' in window) {
@@ -315,7 +308,7 @@ export default function WellnessTracker(): React.ReactElement {
   const averageMood = (MOOD_DATA.reduce((acc, item) => acc + item.value, 0) / 7).toFixed(1);
 
   return (
-    <div className="min-h-screen bg-gray-50 text-gray-800 transition-colors duration-300 dark:bg-gray-900 dark:text-gray-200">
+    <div className="min-h-screen bg-gray-50 text-gray-800 transition-colors duration-300">
       {/* Landing Page */}
       <AnimatePresence>
         {currentView === 'landing' && (
@@ -327,16 +320,16 @@ export default function WellnessTracker(): React.ReactElement {
           >
             {/* Background gradient circles */}
             <div className="absolute top-0 left-0 w-full h-full overflow-hidden -z-10">
-              <div className="absolute -top-32 -left-32 w-96 h-96 bg-blue-400 dark:bg-blue-700 rounded-full opacity-20 filter blur-3xl"></div>
-              <div className="absolute top-1/3 -right-32 w-96 h-96 bg-purple-400 dark:bg-purple-700 rounded-full opacity-20 filter blur-3xl"></div>
-              <div className="absolute -bottom-32 left-1/4 w-96 h-96 bg-green-400 dark:bg-green-700 rounded-full opacity-20 filter blur-3xl"></div>
+              <div className="absolute -top-32 -left-32 w-96 h-96 bg-blue-400 rounded-full opacity-20 filter blur-3xl"></div>
+              <div className="absolute top-1/3 -right-32 w-96 h-96 bg-purple-400 rounded-full opacity-20 filter blur-3xl"></div>
+              <div className="absolute -bottom-32 left-1/4 w-96 h-96 bg-green-400 rounded-full opacity-20 filter blur-3xl"></div>
             </div>
 
             <motion.h1
               initial={{ y: -20, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               transition={{ delay: 0.3 }}
-              className="text-5xl md:text-6xl font-bold mb-6 bg-gradient-to-r from-violet-600 to-indigo-600 dark:from-violet-400 dark:to-indigo-400 bg-clip-text text-transparent"
+              className="text-5xl md:text-6xl font-bold mb-6 bg-gradient-to-r from-violet-600 to-indigo-600 bg-clip-text text-transparent"
             >
               Wellness Tracker
             </motion.h1>
@@ -345,7 +338,7 @@ export default function WellnessTracker(): React.ReactElement {
               initial={{ y: -20, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               transition={{ delay: 0.4 }}
-              className="text-xl text-gray-600 dark:text-gray-300 mb-12 max-w-2xl"
+              className="text-xl text-gray-600 mb-12 max-w-2xl"
             >
               Track your habits, monitor your well-being, and achieve your personal goals with powerful insights.
             </motion.p>
@@ -359,7 +352,7 @@ export default function WellnessTracker(): React.ReactElement {
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                className="bg-gradient-to-r from-violet-600 to-indigo-600 text-white px-8 py-3 rounded-lg text-lg font-medium shadow-lg shadow-indigo-500/30"
+                className="bg-gradient-to-r from-violet-600 to-indigo-600 text-white px-8 py-3 rounded-lg text-lg font-medium shadow-lg"
                 onClick={() => setCurrentView('app')}
               >
                 Get Started
@@ -374,27 +367,27 @@ export default function WellnessTracker(): React.ReactElement {
               className="mt-24 grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto"
             >
               <div className="text-center p-6">
-                <div className="bg-indigo-100 dark:bg-indigo-900/30 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                <div className="bg-indigo-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
                   <span className="text-2xl">📊</span>
                 </div>
                 <h3 className="text-xl font-semibold mb-2">Track Habits</h3>
-                <p className="text-gray-600 dark:text-gray-400">Monitor daily progress and build lasting habits</p>
+                <p className="text-gray-600">Monitor daily progress and build lasting habits</p>
               </div>
 
               <div className="text-center p-6">
-                <div className="bg-violet-100 dark:bg-violet-900/30 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                <div className="bg-violet-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
                   <span className="text-2xl">📈</span>
                 </div>
                 <h3 className="text-xl font-semibold mb-2">Visual Stats</h3>
-                <p className="text-gray-600 dark:text-gray-400">See your progress with beautiful visual data</p>
+                <p className="text-gray-600">See your progress with beautiful visual data</p>
               </div>
 
               <div className="text-center p-6">
-                <div className="bg-blue-100 dark:bg-blue-900/30 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                <div className="bg-blue-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
                   <span className="text-2xl">🏆</span>
                 </div>
                 <h3 className="text-xl font-semibold mb-2">Achieve Goals</h3>
-                <p className="text-gray-600 dark:text-gray-400">Set targets and celebrate your streaks</p>
+                <p className="text-gray-600">Set targets and celebrate your streaks</p>
               </div>
             </motion.div>
           </motion.div>
@@ -405,10 +398,10 @@ export default function WellnessTracker(): React.ReactElement {
       {currentView === 'app' && (
         <div className="max-w-7xl mx-auto p-4 md:p-6">
           {/* Navbar */}
-          <nav className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg shadow-lg p-4 mb-8 rounded-xl sticky top-4 z-10">
+          <nav className="bg-white/80 backdrop-blur-lg shadow-lg p-4 mb-8 rounded-xl sticky top-4 z-10">
             <div className="flex justify-between items-center">
               <div className="flex items-center gap-2">
-                <h1 className="text-xl font-bold bg-gradient-to-r from-violet-600 to-indigo-600 dark:from-violet-400 dark:to-indigo-400 bg-clip-text text-transparent">
+                <h1 className="text-xl font-bold bg-gradient-to-r from-violet-600 to-indigo-600 bg-clip-text text-transparent">
                   Wellness Tracker
                 </h1>
               </div>
@@ -421,7 +414,7 @@ export default function WellnessTracker(): React.ReactElement {
                       setShowReminders(!showReminders);
                       markRemindersAsRead();
                     }}
-                    className="relative p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                    className="relative p-2 rounded-lg hover:bg-gray-100 transition-colors"
                     aria-label="Notifications"
                   >
                     <svg
@@ -461,13 +454,13 @@ export default function WellnessTracker(): React.ReactElement {
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: 10 }}
-                        className="absolute right-0 mt-2 w-80 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-20"
+                        className="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-lg border border-gray-200 z-20"
                       >
-                        <div className="flex justify-between items-center p-4 border-b border-gray-200 dark:border-gray-700">
+                        <div className="flex justify-between items-center p-4 border-b border-gray-200">
                           <h3 className="font-medium">Reminders</h3>
                           <button
                             onClick={() => setShowReminders(false)}
-                            className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                            className="text-gray-500 hover:text-gray-700"
                           >
                             <svg
                               xmlns="http://www.w3.org/2000/svg"
@@ -488,20 +481,20 @@ export default function WellnessTracker(): React.ReactElement {
 
                         <div className="max-h-80 overflow-y-auto">
                           {reminders.length === 0 ? (
-                            <div className="p-4 text-center text-gray-500 dark:text-gray-400">
+                            <div className="p-4 text-center text-gray-500">
                               No reminders set
                             </div>
                           ) : (
                             reminders.map((reminder) => (
                               <div
                                 key={reminder.id}
-                                className="p-3 border-b border-gray-100 dark:border-gray-700"
+                                className="p-3 border-b border-gray-100"
                               >
                                 <div className="flex items-center gap-3">
                                   <span className="text-xl">{reminder.habitIcon}</span>
                                   <div className="flex-1">
                                     <div className="font-medium">{reminder.habitName}</div>
-                                    <div className="text-sm text-gray-500 dark:text-gray-400">
+                                    <div className="text-sm text-gray-500">
                                       {reminder.time} - {reminder.message}
                                     </div>
                                   </div>
@@ -537,18 +530,6 @@ export default function WellnessTracker(): React.ReactElement {
                             ))
                           )}
                         </div>
-
-                        {notificationPermission !== 'granted' && (
-                          <div className="p-3 bg-yellow-50 dark:bg-yellow-900/30 text-sm">
-                            <button
-                              onClick={requestNotificationPermission}
-                              className="text-blue-600 dark:text-blue-400 font-medium hover:underline"
-                            >
-                              Enable notifications
-                            </button>{' '}
-                            to receive reminders.
-                          </div>
-                        )}
                       </motion.div>
                     )}
                   </AnimatePresence>
@@ -561,7 +542,7 @@ export default function WellnessTracker(): React.ReactElement {
                     className={`px-4 py-2 rounded-lg transition-colors ${
                       appView === 'dashboard'
                         ? 'bg-gradient-to-r from-violet-600 to-indigo-600 text-white'
-                        : 'bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600'
+                        : 'bg-gray-100 hover:bg-gray-200'
                     }`}
                   >
                     Dashboard
@@ -571,7 +552,7 @@ export default function WellnessTracker(): React.ReactElement {
                     className={`px-4 py-2 rounded-lg transition-colors ${
                       appView === 'habits'
                         ? 'bg-gradient-to-r from-violet-600 to-indigo-600 text-white'
-                        : 'bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600'
+                        : 'bg-gray-100 hover:bg-gray-200'
                     }`}
                   >
                     Habits
@@ -580,7 +561,7 @@ export default function WellnessTracker(): React.ReactElement {
 
                 {/* Mobile Menu Button */}
                 <button
-                  className="md:hidden p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
+                  className="md:hidden p-2 rounded-lg hover:bg-gray-100"
                   onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
                   aria-label="Toggle menu"
                 >
@@ -639,7 +620,7 @@ export default function WellnessTracker(): React.ReactElement {
                       className={`px-4 py-3 rounded-lg transition-all ${
                         appView === 'dashboard'
                           ? 'bg-gradient-to-r from-violet-600 to-indigo-600 text-white'
-                          : 'bg-gray-100 dark:bg-gray-700'
+                          : 'bg-gray-100'
                       }`}
                     >
                       Dashboard
@@ -652,7 +633,7 @@ export default function WellnessTracker(): React.ReactElement {
                       className={`px-4 py-3 rounded-lg transition-all ${
                         appView === 'habits'
                           ? 'bg-gradient-to-r from-violet-600 to-indigo-600 text-white'
-                          : 'bg-gray-100 dark:bg-gray-700'
+                          : 'bg-gray-100'
                       }`}
                     >
                       Habits
@@ -693,7 +674,7 @@ export default function WellnessTracker(): React.ReactElement {
                   {habits.slice(0, 3).map((habit) => (
                     <div
                       key={habit.id}
-                      className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-lg transition-transform hover:scale-[1.02]"
+                      className="bg-white p-6 rounded-2xl shadow-lg transition-transform hover:scale-[1.02]"
                     >
                       <div className="flex items-center gap-3 mb-4">
                         <span className="text-2xl">{habit.icon}</span>
@@ -703,13 +684,13 @@ export default function WellnessTracker(): React.ReactElement {
                       <div className="flex items-center justify-between mb-3">
                         <div>
                           <span className="text-3xl font-bold">{getWeeklyAverage(habit)}</span>
-                          <span className="text-sm ml-1 text-gray-500 dark:text-gray-400">{habit.unit}</span>
+                          <span className="text-sm ml-1 text-gray-500">{habit.unit}</span>
                         </div>
                         <div
                           className={`py-1 px-3 rounded-full flex items-center gap-1 text-sm font-medium ${
                             habit.currentStreak >= 3
-                              ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
-                              : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
+                              ? 'bg-green-100 text-green-800'
+                              : 'bg-gray-100 text-gray-800'
                           }`}
                         >
                           {getStreakEmoji(habit.currentStreak)} {habit.currentStreak} day streak
@@ -737,11 +718,8 @@ export default function WellnessTracker(): React.ReactElement {
                     </div>
                   ))}
 
-
-                  
-
                   {/* Screen Time Card */}
-                  <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-lg transition-transform hover:scale-[1.02]">
+                  <div className="bg-white p-6 rounded-2xl shadow-lg transition-transform hover:scale-[1.02]">
                     <div className="flex items-center gap-3 mb-4">
                       <span className="text-2xl">📱</span>
                       <h4 className="text-lg font-semibold">Screen Time</h4>
@@ -768,7 +746,7 @@ export default function WellnessTracker(): React.ReactElement {
 
                       <div>
                         <div className="text-2xl font-bold mb-1">{totalScreenTime.toFixed(1)} hrs</div>
-                        <div className="text-sm text-gray-500 dark:text-gray-400">Daily average</div>
+                        <div className="text-sm text-gray-500">Daily average</div>
                       </div>
                     </div>
 
@@ -776,7 +754,7 @@ export default function WellnessTracker(): React.ReactElement {
                       {SCREEN_TIME_DATA.map((item, index) => (
                         <div key={index} className="flex items-center gap-2">
                           <span className="w-3 h-3 rounded-full" style={{ backgroundColor: item.color }}></span>
-                          <span className="text-sm text-gray-700 dark:text-gray-300">
+                          <span className="text-sm text-gray-700">
                             {item.name}: <span className="font-medium">{item.value} hrs</span>
                           </span>
                         </div>
@@ -784,23 +762,21 @@ export default function WellnessTracker(): React.ReactElement {
                     </div>
                   </div>
 
-                  {/* Mood Card */}
-                  <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-lg transition-transform hover:scale-[1.02]">
+                 {/* Mood Card */}
+                 <div className="bg-white p-6 rounded-2xl shadow-lg transition-transform hover:scale-[1.02]">
                     <div className="flex items-center gap-3 mb-4">
                       <span className="text-2xl">😊</span>
                       <h4 className="text-lg font-semibold">Mood Tracker</h4>
                     </div>
-
                     <div className="flex items-center justify-between mb-3">
                       <div>
                         <span className="text-3xl font-bold">{averageMood}</span>
-                        <span className="text-sm ml-1 text-gray-500 dark:text-gray-400">/10</span>
+                        <span className="text-sm ml-1 text-gray-500">/10</span>
                       </div>
-                      <div className="py-1 px-3 rounded-full bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300 flex items-center gap-1 text-sm font-medium">
+                      <div className="py-1 px-3 rounded-full bg-purple-100 text-purple-800 flex items-center gap-1 text-sm font-medium">
                         Weekly average
                       </div>
                     </div>
-
                     <ResponsiveContainer width="100%" height={80}>
                       <LineChart data={MOOD_DATA}>
                         <Line
@@ -814,43 +790,6 @@ export default function WellnessTracker(): React.ReactElement {
                       </LineChart>
                     </ResponsiveContainer>
                   </div>
-                </div>
-              </div>
-
-              {/* Weekly Overview */}
-              <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-lg">
-                <h3 className="text-xl font-semibold mb-6">Weekly Progress</h3>
-                <div className="overflow-x-auto">
-                  <div className="min-w-max grid grid-cols-7 gap-2 md:gap-4">
-                    {weekdays.map((day, index) => (
-                      <div key={day} className="text-center">
-                        <p className="text-sm font-medium mb-3">{day}</p>
-                        <div className="space-y-2">
-                          {habits.map((habit) => (
-                            <div key={habit.id} className="w-full">
-                              <div
-                                className={`h-3 rounded-full ${
-                                  habit.data[index] >= habit.target
-                                    ? 'bg-gradient-to-r from-green-400 to-green-500'
-                                    : 'bg-gray-200 dark:bg-gray-700'
-                                }`}
-                                title={`${habit.name}: ${habit.data[index]} ${habit.unit}`}
-                              />
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="mt-6 flex flex-wrap gap-4">
-                  {habits.map((habit) => (
-                    <div key={habit.id} className="flex items-center gap-2">
-                      <span className="w-3 h-3 rounded-full" style={{ backgroundColor: habit.color }}></span>
-                      <span className="text-sm text-gray-700 dark:text-gray-300">{habit.name}</span>
-                    </div>
-                  ))}
                 </div>
               </div>
             </motion.div>
